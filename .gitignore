@@ -1,0 +1,26 @@
+# data and models are never committed
+*.npz
+*.npy
+*.pkl
+data/
+datasets/
+models/
+SMPLX_NEUTRAL.npz
+
+# outputs
+*.json
+!docs/*.json
+out/
+runs/
+*.log
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.ipynb_checkpoints/
+
+# os
+.DS_Store
+Thumbs.db
