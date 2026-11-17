@@ -155,7 +155,7 @@ Data used for the numbers in this repository: the `Handshake` (A001) subset of *
 ## 6. Two data pitfalls you must know before trusting any number
 
 1. **Released two-person data has `betas` all zeros.** Every subject is fitted to the same
-   neutral skeleton: the P1/P2 forearm-length ratio is exactly `1.000000` in all 714 released
+   neutral skeleton: the P1/P2 forearm-length ratio is exactly `1.000000` in all 475 released
    pairs, so the "body-size mismatch" does not exist in the data as shipped. The real body is
    only in `raw_betas`; re-running FK with `raw_betas` restores a 32 cm height range while
    changing contact geometry by only +0.6 cm median.

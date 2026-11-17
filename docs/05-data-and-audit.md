@@ -64,7 +64,7 @@ Forearm-length ratio between the two partners:
 | zero betas (as released) | **1.000000** | 1.000000 | 1.000000 |
 | `raw_betas` (true bodies) | ~1.0 | 0.883 | 1.149 |
 
-Across 714 released pairs the zero-beta ratio is exactly 1 to 1e-6: every subject is the same
+Across 475 released pairs the zero-beta ratio is exactly 1 to 1e-6: every subject is the same
 neutral body. Real heights, recovered from `raw_betas`, span **136.7–168.9 cm** (range 32.2 cm);
 33 % of pairs differ by more than 10 cm, median pair difference +1.3 cm.
 
