@@ -27,18 +27,19 @@ from config import (
 )
 
 # Anatomical handshake bounds (rad), much tighter than mechanical motor stops
+# Keeps the elbow naturally pointing downward (prevents inward roll + outward yaw elbow flip)
 ANAT_LIMITS = {
     "waist_yaw_joint": (-0.35, 0.35),
     "waist_roll_joint": (-0.15, 0.15),
     "waist_pitch_joint": (0.0, 0.50),
-    "L_shoulder_pitch": (-1.85, 0.30),
-    "L_shoulder_roll": (-0.25, 1.25),
-    "L_shoulder_yaw": (-0.85, 0.85),
-    "L_elbow": (-1.00, 1.40),       # >1.45 hyperextends arm backward!
-    "R_shoulder_pitch": (-1.85, 0.30),
-    "R_shoulder_roll": (-1.25, 0.25),
-    "R_shoulder_yaw": (-0.85, 0.85),
-    "R_elbow": (-1.00, 1.40),       # >1.45 hyperextends arm backward!
+    "L_shoulder_pitch": (-1.65, 0.05),
+    "L_shoulder_roll": (-0.05, 0.75),
+    "L_shoulder_yaw": (-0.45, 0.20),
+    "L_elbow": (-0.90, 1.18),       # keeps natural elbow bend; >1.45 hyperextends backward!
+    "R_shoulder_pitch": (-1.65, 0.05),
+    "R_shoulder_roll": (-0.75, 0.05),
+    "R_shoulder_yaw": (-0.20, 0.45),
+    "R_elbow": (-0.90, 1.18),       # keeps natural elbow bend; >1.45 hyperextends backward!
 }
 
 
@@ -118,13 +119,13 @@ class G1Kinematics:
         q[3], q[4], q[5], q[6] = np.cos(half), 0.0, 0.0, np.sin(half)
         lean_rad = float(np.clip(np.radians(lean_deg), 0.0, 0.50))
         q[self.waist_qpos["pitch"]] = lean_rad
-        # Relaxed hanging arm posture (G1 elbow=+1.25 is nearly straight down without hyperextension)
+        # Relaxed hanging arm posture (G1 elbow=+1.05 is naturally relaxed without hyperextension)
         for side, sgn in (("L", 1.0), ("R", -1.0)):
             q_ids = self.arm_joints[side][0]
             q[q_ids[0]] = -0.05
             q[q_ids[1]] = 0.18 * sgn
             q[q_ids[2]] = 0.0
-            q[q_ids[3]] = 1.25
+            q[q_ids[3]] = 1.05
         return q
 
     def arm_prior_from_4dof(self, arm_4dof: np.ndarray, side: str = "R") -> np.ndarray:
@@ -134,7 +135,7 @@ class G1Kinematics:
         # Human sh_pitch > 0 lifts forward; G1 shoulder_pitch < 0 lifts forward
         g1_sp = float(np.clip(-sp, *limits[0]))
         g1_sr = float(np.clip(sr, *limits[1]))
-        g1_sy = float(np.clip(0.35 * sy, *limits[2]))
+        g1_sy = float(np.clip(0.50 * sy, *limits[2]))
         # G1 elbow=pi/2 is straight, 0 is 90deg flex, <0 is deep flex
         g1_el = float(np.clip((0.5 * np.pi) - el, *limits[3]))
         return np.array([g1_sp, g1_sr, g1_sy, g1_el], dtype=np.float64)
@@ -143,7 +144,7 @@ class G1Kinematics:
         """Inverse of arm_prior_from_4dof for conditioning ProMP in human 4-DoF space."""
         sp = -float(g1_arm4[0])
         sr = float(g1_arm4[1])
-        sy = float(g1_arm4[2]) / 0.35
+        sy = float(g1_arm4[2]) / 0.50
         el = (0.5 * np.pi) - float(g1_arm4[3])
         return np.array([sp, sr, sy, el], dtype=np.float32)
 

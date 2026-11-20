@@ -129,11 +129,12 @@ def extract_arm_4dof(j_zup: np.ndarray, side: str = "R") -> np.ndarray:
     el = j_zup[:, el_idx]
     wr = j_zup[:, wr_idx]
 
-    # Torso local frame at each frame: z_up along spine2->neck, x_lat along L->R shoulder
+    # Torso local frame at each frame: z_ax up (spine2->neck), lr Left->Right (-Y),
+    # so Forward (+X) is z_ax x lr, and Left (+Y) is z_ax x x_fwd.
     z_ax = j_zup[:, NECK] - j_zup[:, SPINE2]
     z_ax /= np.linalg.norm(z_ax, axis=1, keepdims=True) + 1e-8
     lr = j_zup[:, SHOULDER_R] - j_zup[:, SHOULDER_L]
-    x_fwd = np.cross(lr, z_ax)
+    x_fwd = np.cross(z_ax, lr)
     x_fwd /= np.linalg.norm(x_fwd, axis=1, keepdims=True) + 1e-8
     y_lat = np.cross(z_ax, x_fwd)
     y_lat /= np.linalg.norm(y_lat, axis=1, keepdims=True) + 1e-8
@@ -142,13 +143,13 @@ def extract_arm_4dof(j_zup: np.ndarray, side: str = "R") -> np.ndarray:
     u_len = np.linalg.norm(u, axis=1, keepdims=True) + 1e-8
     u_dir = u / u_len
 
-    # Express upper arm direction in torso frame (fwd, lat, up)
+    # Express upper arm direction in torso frame (fwd=+X, left=+Y, up=+Z)
     ux = np.sum(u_dir * x_fwd, axis=1)
     uy = np.sum(u_dir * y_lat, axis=1)
     uz = np.sum(u_dir * z_ax, axis=1)
 
-    sh_pitch = np.arctan2(ux, -uz)                       # forward elevation
-    sh_roll = np.arcsin(np.clip(uy, -0.999, 0.999))      # abduction/adduction
+    sh_pitch = np.arctan2(ux, -uz)                       # >0 lifts arm forward
+    sh_roll = np.arcsin(np.clip(uy, -0.999, 0.999))      # <0 right-arm abduction, >0 left-arm abduction
 
     f = wr - el
     f_dir = f / (np.linalg.norm(f, axis=1, keepdims=True) + 1e-8)
@@ -156,11 +157,8 @@ def extract_arm_4dof(j_zup: np.ndarray, side: str = "R") -> np.ndarray:
     cos_el = np.clip(np.sum(u_dir * f_dir, axis=1), -0.999, 0.999)
     el_flex = np.arccos(cos_el)
 
-    # Shoulder yaw: angle of forearm projection orthogonal to upper arm
-    f_perp = f_dir - np.sum(f_dir * u_dir, axis=1, keepdims=True) * u_dir
-    f_perp_norm = np.linalg.norm(f_perp, axis=1, keepdims=True) + 1e-8
-    f_perp = f_perp / f_perp_norm
-    sh_yaw = np.arctan2(np.sum(f_perp * y_lat, axis=1), np.sum(f_perp * x_fwd, axis=1))
+    # Smooth medial/lateral forearm rotation (avoids +-pi branch-cut inversion)
+    sh_yaw = np.arcsin(np.clip(np.sum(f_dir * y_lat, axis=1), -0.999, 0.999))
 
     return np.stack([sh_pitch, sh_roll, sh_yaw, el_flex], axis=1).astype(np.float32)
 
@@ -208,9 +206,16 @@ def build_cache(data_dir: Path, model_path: Path, out_npz: Path,
         j1, j2 = j1[:n], j2[:n]
 
         p1_palms, p2_palms = palm_positions(j1), palm_positions(j2)
-        dists = {f"{a}-{b}": np.linalg.norm(p1_palms[a] - p2_palms[b], axis=1)
-                 for a in "LR" for b in "LR"}
-        best_pair = min(dists, key=lambda k: float(dists[k].min()))
+        # Handshaking is strictly ipsilateral (R-R right-hand or L-L left-hand);
+        # excluding cross-hand (R-L / L-R) prevents picking the secondary hand
+        # that pats the back of the partner's wrist during two-handed clasps.
+        dists = {f"{a}-{a}": np.linalg.norm(p1_palms[a] - p2_palms[a], axis=1)
+                 for a in ("R", "L")}
+        # Prefer right-hand (R-R) when it achieves valid contact, else best ipsilateral pair
+        if float((dists["R-R"] < CONTACT_DIST_M).mean()) >= MIN_CONTACT_RATIO:
+            best_pair = "R-R"
+        else:
+            best_pair = min(dists, key=lambda k: float(dists[k].min()))
         d_best = dists[best_pair]
         contact_ratio = float((d_best < CONTACT_DIST_M).mean())
         if contact_ratio < MIN_CONTACT_RATIO:

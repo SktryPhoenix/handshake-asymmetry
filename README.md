@@ -8,19 +8,19 @@
 
 ## 0. Visual Demos & 4-Way Ablation (Route 2 + Negotiation Law)
 
-![G043T000A001R012 4-way comparison](demos/G043T000A001R012_compare4.gif)
-![G038T000A001R007 4-way comparison](demos/G038T000A001R007_compare4.gif)
+![G049T000A001R007 4-way comparison](demos/G049T000A001R007_compare4.gif)
+![G023T000A001R008 4-way comparison](demos/G023T000A001R008_compare4.gif)
 
 *Left to right: **A** Naive delayed baseline (0° lean) → **B** Paper A (`2103.00616`: causal LSTM + Sigmoid blend + `ProMP.condition`, 0° lean) → **C** Paper A + Paper B (`2610.15274`: $K=16$ embodiment-aware search) → **D** **Route 2 + Negotiation Law** (25° empirical torso lean + `[0.84, 0.90]` comfort extension band). Spheres: **Green** = true partner palm, **Yellow** = causal LSTM predicted final clasp point, **Red** = Sigmoid blended target, **Purple** = G1 hand.*
 
-### Held-out G-group test split results (171 valid contact pairs: train=118 / val=26 / test=27)
+### Held-out G-group test split results (142 valid ipsilateral contact pairs: train=85 / val=29 / test=28)
 
-| Condition | Terminal Palm Error (med) ↓ | Success (≤5 cm & valid) ↑ | Anatomical & Collision Valid ↑ | Extension Ratio (med) | In Human Comfort Band `[0.84, 0.90]` ↑ | Residual Partner Concession (p90) ↓ |
+| Condition | Terminal Palm Error (med) ↓ | Success (≤5 cm & valid) ↑ | Anatomical & Collision Valid ↑ | Extension Ratio (med) | In Human Comfort Band `[0.84, 0.90]` ↑ | Residual Partner Concession (med) ↓ |
 |---|---:|---:|---:|---:|---:|---:|
-| **A: Naive Delayed (`K=1`, 0° lean)** | 20.59 cm | 7.4 % | 74.1 % | 1.058 | 3.7 % | 16.11 cm |
-| **B: Paper A (`LSTM + ProMP.condition`, 0°)** | 14.32 cm | 22.2 % | 85.2 % | 0.920 | 3.7 % | 16.11 cm |
-| **C: Paper A + Paper B (`K=16` Search)** | 2.86 cm | **74.1 %** | **96.3 %** | 0.956 | 14.8 % | 4.12 cm |
-| **D: Route 2 + Negotiation Law (Ours)** | **2.42 cm** | 70.4 % | **96.3 %** | **0.905** | **22.2 %** | **0.20 cm** |
+| **A: Naive Delayed (`K=1`, 0° lean)** | 19.03 cm | 7.1 % | 100.0 % | 0.956 | 10.7 % | 3.16 cm |
+| **B: Paper A (`LSTM + ProMP.condition`, 0°)** | 2.41 cm | 53.6 % | 100.0 % | 0.928 | 17.9 % | 2.89 cm |
+| **C: Paper A + Paper B (`K=16` Search)** | 0.92 cm | **92.9 %** | **100.0 %** | 0.977 | 7.1 % | 0.00 cm |
+| **D: Route 2 + Negotiation Law (Ours)** | **0.45 cm** | 89.3 % | **100.0 %** | **0.872** | **50.0 %** | **0.00 cm** |
 
 ---
 
@@ -131,9 +131,9 @@ route2_promp_search/          ★ Mainline method implementation (V3)
   view_viser.py               live interactive 3D Viser web viewer
   record_demos.py             exports .viser 3D recordings + 4-panel MP4/GIF/PNG demos
 demos/                        ★ Recorded 4-way comparison GIFs, MP4s, keyframes & .viser scenes
-  G043T000A001R012_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
-  G038T000A001R007_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
-  G038T000A001R006_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G049T000A001R007_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G059T000A001R005_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G013T000A001R008_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
   G023T000A001R008_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
 docs/
   00-overview.md              one-page idea
