@@ -1,6 +1,6 @@
 # Data used, and the 12-point audit that made it usable
 
-Reproduce with `scripts/audit_pairs.py`. This documents why every number in this repository uses
+Reproduce with `analysis/audit_pairs.py`. This documents why every number in this repository uses
 `raw_betas` and per-person floor alignment.
 
 ## 1. Datasets examined

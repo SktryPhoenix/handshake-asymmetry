@@ -1,6 +1,6 @@
 # The handshake negotiation law
 
-Reproduce with `scripts/law_handshake_geometry.py`.
+Reproduce with `analysis/law_handshake_geometry.py`.
 
 ## Data and protocol
 

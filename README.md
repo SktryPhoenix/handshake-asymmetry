@@ -2,7 +2,7 @@
 
 **Learning the negotiation law of human–human handshakes, to correct the inherent asymmetry of human–robot handshakes.**
 
-> Status: **Implemented & evaluated on Unitree G1** (`route2_promp_search/`, 4-condition ablation over 324 Inter-X A001 pairs + side-by-side 3D demos in `demos/`).
+> Status: **Implemented & evaluated on Unitree G1** (`src/`, 4-condition ablation over 324 Inter-X A001 pairs + side-by-side 3D demos in `demos/`).
 
 ---
 
@@ -38,7 +38,7 @@ We measured it from real human–human handshakes, then quantified what a humano
 
 ---
 
-## 2. Key measurements (all reproducible with the scripts in `scripts/`)
+## 2. Key measurements (all reproducible with `analysis/`)
 
 ### 2.1 The handshake negotiation law (324 pairs / 58 dyads / 116 distinct people)
 
@@ -120,9 +120,9 @@ supplies a data-driven value for it.
 ## 4. Repository map
 
 ```
-route2_promp_search/          ★ Mainline method implementation (V3)
+src/                          ★ Mainline method implementation (ProMP + LSTM + K=16 Search + Negotiation Law)
   config.py                   paths, SMPL-X joint indices, G1 & negotiation law constants
-  data_prep.py                raw_betas FK + per-person ground alignment + G-group split
+  data_prep.py                raw_betas FK + per-person grounding + ipsilateral pair filtering + G-group split
   promp.py                    Layer P: minimum-jerk 8-RBF ProMP fit, sampling, Bayesian conditioning
   predictor_lstm.py           Layer D: causal heading-aligned LSTM partner predictor + Sigmoid blend
   g1_kinematics.py            Layer R/D: MuJoCo G1 nullspace DLS IK, anatomical bounds, collision check
@@ -130,62 +130,61 @@ route2_promp_search/          ★ Mainline method implementation (V3)
   run_pipeline.py             end-to-end training & 4-condition ablation
   view_viser.py               live interactive 3D Viser web viewer
   record_demos.py             exports .viser 3D recordings + 4-panel MP4/GIF/PNG demos
-demos/                        ★ Recorded 4-way comparison GIFs, MP4s, keyframes & .viser scenes
+demos/                        ★ Recorded 4-way comparison GIFs, MP4s, keyframes, .viser scenes & metrics
   G049T000A001R007_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
   G059T000A001R005_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
   G013T000A001R008_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
   G023T000A001R008_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
-docs/
+  ablation_metrics.json       full JSON metrics of the 4-way Route 2 ablation
+analysis/                     ★ Empirical negotiation-law & dataset quality audit scripts
+  smplx_fk.py                 SMPL-H loading + SMPL-X forward kinematics (Y-up caveat inside)
+  law_handshake_geometry.py   measures the five regularities -> law.json
+  reachability_lean.py        measures reach vs lean + required concession -> reach.json
+  audit_pairs.py              12-point quality audit for paired motion data -> audit.json
+docs/                         ★ Research notes, literature survey & PDF reports
   00-overview.md              one-page idea
   01-problem-and-framing.md   asymmetry, three layers, what prior work assumes
   02-handshake-geometry-law.md  the five laws, with the measurement protocol
-  03-methods-survey.md        34 papers, method families, who-adapts-to-whom table, gap
+  03-methods-survey.md        24-paper HRI survey, method families, who-adapts-to-whom gap
   04-proposed-method.md       three knobs + concession law + experiment plan + risks
   05-data-and-audit.md        8 interaction datasets, 12-point quality audit, data pitfalls
-scripts/                      ★ Parameterized empirical law & dataset audit scripts (V4)
-  smplx_fk.py                 SMPL-H loading + SMPL-X forward kinematics (Y-up caveat inside)
-  law_handshake_geometry.py   measures the five regularities  -> law.json
-  reachability_lean.py        measures reach vs lean + required concession -> reach.json
-  audit_pairs.py              12-point quality audit for paired motion data -> audit.json
-reports/
-  route2_report.json                full JSON metrics of the 4-way Route 2 ablation
-  report-data-verification.pdf      per-file verification of 5,675 motion files + dataset profiles
-  report-methods-survey.pdf         the 34-paper methods survey
-  analysis-three-layers.pdf         generation / retargeting / deployment attribution
+  reports/                    compiled PDF survey & verification reports
+    report-data-verification.pdf
+    report-methods-survey.pdf
+    analysis-three-layers.pdf
 ```
 
 ---
 
 ## 5. Quickstart
 
-Requirements: `numpy`, `torch`, `smplx`, and an `SMPLX_NEUTRAL.npz` model file (registration
+Requirements: `numpy`, `torch`, `smplx`, `mujoco`, `viser`, `yourdfpy`, and an `SMPLX_NEUTRAL.npz` model file (registration
 required upstream). Input data is any two-person motion set in the SMPL-H 52-joint layout,
 paired as `*_P1.npz` / `*_P2.npz` with a `raw_betas` field.
 
 ```bash
-pip install numpy torch smplx
+# 1) Run the mainline pipeline (ProMP + LSTM + K=16 Search + Negotiation Law)
+python src/run_pipeline.py --epochs 80 --k-search 16 --work-dir runs/handshake_route2
 
-python scripts/law_handshake_geometry.py \
+# 2) Launch interactive 3D Viser web viewer or export 4-panel demo videos
+python src/view_viser.py --vis runs/handshake_route2/route2_vis.npy --port 8091
+python src/record_demos.py --vis runs/handshake_route2/route2_vis.npy --out-dir demos
+
+# 3) Optional: reproduce the empirical negotiation laws & dataset audit
+python analysis/law_handshake_geometry.py \
     --data-root /path/to/handshake_pairs \
     --model /path/to/SMPLX_NEUTRAL.npz \
     --out law.json
 
-python scripts/reachability_lean.py \
+python analysis/reachability_lean.py \
     --data-root /path/to/handshake_pairs \
     --model /path/to/SMPLX_NEUTRAL.npz \
     --out reach.json
 
-python scripts/audit_pairs.py \
+python analysis/audit_pairs.py \
     --root /path/to/handshake_pairs \
     --model /path/to/SMPLX_NEUTRAL.npz \
     --out audit.json --workers 8
-
-# Run the full V3 Route 2 pipeline (ProMP + LSTM + K=16 Search + Negotiation Law)
-python route2_promp_search/run_pipeline.py --epochs 80 --k-search 16 --work-dir runs/handshake_route2
-
-# Launch interactive 3D Viser web viewer or export 4-panel demo videos
-python route2_promp_search/view_viser.py --vis runs/handshake_route2/route2_vis.npy --port 8091
-python route2_promp_search/record_demos.py --vis runs/handshake_route2/route2_vis.npy --out-dir demos
 ```
 
 Data used for the numbers in this repository: the `Handshake` (A001) subset of **Inter-X**

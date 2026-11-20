@@ -1,4 +1,4 @@
-# scripts
+# Empirical Analysis & Dataset Audit (`analysis/`)
 
 All scripts are standalone and take paths as arguments — nothing is hard-coded.
 
