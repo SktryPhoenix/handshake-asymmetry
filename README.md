@@ -2,7 +2,25 @@
 
 **Learning the negotiation law of human–human handshakes, to correct the inherent asymmetry of human–robot handshakes.**
 
-> Status: research idea + measured evidence (pre-implementation). No robot experiments yet.
+> Status: **Implemented & evaluated on Unitree G1** (`route2_promp_search/`, 4-condition ablation over 324 Inter-X A001 pairs + side-by-side 3D demos in `demos/`).
+
+---
+
+## 0. Visual Demos & 4-Way Ablation (Route 2 + Negotiation Law)
+
+![G043T000A001R012 4-way comparison](demos/G043T000A001R012_compare4.gif)
+![G038T000A001R007 4-way comparison](demos/G038T000A001R007_compare4.gif)
+
+*Left to right: **A** Naive delayed baseline (0° lean) → **B** Paper A (`2103.00616`: causal LSTM + Sigmoid blend + `ProMP.condition`, 0° lean) → **C** Paper A + Paper B (`2610.15274`: $K=16$ embodiment-aware search) → **D** **Route 2 + Negotiation Law** (25° empirical torso lean + `[0.84, 0.90]` comfort extension band). Spheres: **Green** = true partner palm, **Yellow** = causal LSTM predicted final clasp point, **Red** = Sigmoid blended target, **Purple** = G1 hand.*
+
+### Held-out G-group test split results (171 valid contact pairs: train=118 / val=26 / test=27)
+
+| Condition | Terminal Palm Error (med) ↓ | Success (≤5 cm & valid) ↑ | Anatomical & Collision Valid ↑ | Extension Ratio (med) | In Human Comfort Band `[0.84, 0.90]` ↑ | Residual Partner Concession (p90) ↓ |
+|---|---:|---:|---:|---:|---:|---:|
+| **A: Naive Delayed (`K=1`, 0° lean)** | 20.59 cm | 7.4 % | 74.1 % | 1.058 | 3.7 % | 16.11 cm |
+| **B: Paper A (`LSTM + ProMP.condition`, 0°)** | 14.32 cm | 22.2 % | 85.2 % | 0.920 | 3.7 % | 16.11 cm |
+| **C: Paper A + Paper B (`K=16` Search)** | 2.86 cm | **74.1 %** | **96.3 %** | 0.956 | 14.8 % | 4.12 cm |
+| **D: Route 2 + Negotiation Law (Ours)** | **2.42 cm** | 70.4 % | **96.3 %** | **0.905** | **22.2 %** | **0.20 cm** |
 
 ---
 
@@ -102,6 +120,21 @@ supplies a data-driven value for it.
 ## 4. Repository map
 
 ```
+route2_promp_search/          ★ Mainline method implementation (V3)
+  config.py                   paths, SMPL-X joint indices, G1 & negotiation law constants
+  data_prep.py                raw_betas FK + per-person ground alignment + G-group split
+  promp.py                    Layer P: minimum-jerk 8-RBF ProMP fit, sampling, Bayesian conditioning
+  predictor_lstm.py           Layer D: causal heading-aligned LSTM partner predictor + Sigmoid blend
+  g1_kinematics.py            Layer R/D: MuJoCo G1 nullspace DLS IK, anatomical bounds, collision check
+  reaction_search.py          Layer R: K=16 embodiment-aware search + negotiation comfort band
+  run_pipeline.py             end-to-end training & 4-condition ablation
+  view_viser.py               live interactive 3D Viser web viewer
+  record_demos.py             exports .viser 3D recordings + 4-panel MP4/GIF/PNG demos
+demos/                        ★ Recorded 4-way comparison GIFs, MP4s, keyframes & .viser scenes
+  G043T000A001R012_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G038T000A001R007_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G038T000A001R006_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
+  G023T000A001R008_compare4.{gif,mp4} / _contact_frame.png / _D_route2.viser
 docs/
   00-overview.md              one-page idea
   01-problem-and-framing.md   asymmetry, three layers, what prior work assumes
@@ -109,12 +142,13 @@ docs/
   03-methods-survey.md        34 papers, method families, who-adapts-to-whom table, gap
   04-proposed-method.md       three knobs + concession law + experiment plan + risks
   05-data-and-audit.md        8 interaction datasets, 12-point quality audit, data pitfalls
-scripts/
+scripts/                      ★ Parameterized empirical law & dataset audit scripts (V4)
   smplx_fk.py                 SMPL-H loading + SMPL-X forward kinematics (Y-up caveat inside)
   law_handshake_geometry.py   measures the five regularities  -> law.json
   reachability_lean.py        measures reach vs lean + required concession -> reach.json
   audit_pairs.py              12-point quality audit for paired motion data -> audit.json
 reports/
+  route2_report.json                full JSON metrics of the 4-way Route 2 ablation
   report-data-verification.pdf      per-file verification of 5,675 motion files + dataset profiles
   report-methods-survey.pdf         the 34-paper methods survey
   analysis-three-layers.pdf         generation / retargeting / deployment attribution
@@ -145,6 +179,13 @@ python scripts/audit_pairs.py \
     --root /path/to/handshake_pairs \
     --model /path/to/SMPLX_NEUTRAL.npz \
     --out audit.json --workers 8
+
+# Run the full V3 Route 2 pipeline (ProMP + LSTM + K=16 Search + Negotiation Law)
+python route2_promp_search/run_pipeline.py --epochs 80 --k-search 16 --work-dir runs/handshake_route2
+
+# Launch interactive 3D Viser web viewer or export 4-panel demo videos
+python route2_promp_search/view_viser.py --vis runs/handshake_route2/route2_vis.npy --port 8091
+python route2_promp_search/record_demos.py --vis runs/handshake_route2/route2_vis.npy --out-dir demos
 ```
 
 Data used for the numbers in this repository: the `Handshake` (A001) subset of **Inter-X**
