@@ -192,17 +192,12 @@ Data used for the numbers in this repository: the `Handshake` (A001) subset of *
 
 ---
 
-## 6. Two data pitfalls you must know before trusting any number
+## 6. Data Preprocessing Notes
 
-1. **Released two-person data has `betas` all zeros.** Every subject is fitted to the same
-   neutral skeleton: the P1/P2 forearm-length ratio is exactly `1.000000` in all 475 released
-   pairs, so the "body-size mismatch" does not exist in the data as shipped. The real body is
-   only in `raw_betas`; re-running FK with `raw_betas` restores a 32 cm height range while
-   changing contact geometry by only +0.6 cm median.
-2. **The floor is only aligned for the lower of the two partners.** One partner floats by a
-   median 6.4 cm (62 % of pairs > 5 cm). Align each person by their own lowest foot.
+1. **Use `raw_betas` for real body shapes**: Shipped `betas` are zeroed out (identical neutral skeletons); running SMPL-X FK with `raw_betas` restores the true 32 cm height range.
+2. **Per-person ground alignment**: Raw pairs only ground the lower person (leaving the partner floating by ~6.4 cm median); we independently align each person's lowest foot to `z = 0`.
 
-Details and the full audit are in `docs/05-data-and-audit.md`.
+See `docs/05-data-and-audit.md` for the full dataset audit.
 
 ---
 
